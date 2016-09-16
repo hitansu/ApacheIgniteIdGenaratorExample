@@ -5,8 +5,6 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -122,51 +120,11 @@ public class IgniteClient {
 			for(int i= 1;i<= count;i++) {
 				String prefix_key= prefixes[rand.nextInt(prefixes.length)];
 				try {
-					seq = ignite.atomicSequence(prefix_key, 0, false);
-					if(seq== null) {
-						seq = ignite.atomicSequence(prefix_key, 0, true);
-						long curr= seq.get();
-						if(curr== 0) {/*
-							Lock lock = cache.lock(prefix_key);
-							try {
-							
-								if(lock.tryLock(2, TimeUnit.SECONDS)){
-								try {
-									//boolean isIdSaved= persistService.persistId(prefix_key, curr+100);
-									//System.out.println((curr+100)+" id saved: "+isIdSaved);	
-								} finally {
-									lock.unlock();
-								}
-								}
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-
-						*/}
-					}
+					seq = ignite.atomicSequence(prefix_key, 0, true);
 				} catch(IgniteException e) {
 					throw e;
 				}
 				long curr= seq.get();
-			/*	if(curr%500== 0) {
-					persistService.persistId(prefix_key, curr+100);
-				}
-				*/
-				if(curr%1000== 0) {
-					// write next next id to db
-					Lock lock = cache.lock(prefix_key);
-					try {
-						if(lock.tryLock(2, TimeUnit.SECONDS)) {
-							try {
-							//	persistService.persistId(prefix_key, curr+500);
-							} finally {
-								lock.unlock();
-							}
-						}
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
 				long next= seq.incrementAndGet();
 				if(!set.add(prefix_key+next)) throw new RuntimeException("Duplicate Id generated");
 				log.debug("Api call value: "+next);
